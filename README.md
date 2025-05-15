@@ -73,7 +73,7 @@ AlphaAssistive/
 ├── main.py             
 ├── LICENSE              
 ├── README.md            
-├── requirements.txt    
+└── requirements.txt    
 
 ```
 
