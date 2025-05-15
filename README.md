@@ -71,7 +71,7 @@
 ```
 AlphaAssistive/
 ├── main.py              # Main program script
-├── LICENSE              # MIT License
+├── LICENSE              # Apache 2.0 Lecense License
 ├── README.md            # Project documentation
 ├── requirements.txt     # Python dependencies
 └── ... (e.g., config, utils, model files if added)
