@@ -52,44 +52,44 @@ temporal = rs.temporal_filter()
 # --------------------------- #
 r = sr.Recognizer()
 mic = sr.Microphone()
-print("[INFO] Menunggu perintah suara: 'aku ingin ambil objek <warna>'")
+print("[INFO] Waiting for voice command: 'I want to pick up the <color> object'")
 
 target_color = None
 
 while True:
     with mic as source:
         r.adjust_for_ambient_noise(source)
-        print("[INFO] Dengarkan...")
+        print("[INFO] Listening...")
         audio = r.listen(source)
     try:
-        command = r.recognize_google(audio, language='id-ID').lower()
-        print(f"[INFO] Perintah didengar: {command}")
-        if "merah" in command:
+        command = r.recognize_google(audio, language='en-US').lower()
+        print(f"[INFO] Command heard: {command}")
+        if "red" in command:
             target_color = "red"
-            print("[INFO] Perintah dikenali. Memulai tracking objek merah...")
+            print("[INFO] Command recognized. Starting to track red object...")
             break
-        elif "hijau" in command:
+        elif "green" in command:
             target_color = "green"
-            print("[INFO] Perintah dikenali. Memulai tracking objek hijau...")
+            print("[INFO] Command recognized. Starting to track green object...")
             break
-        elif "biru" in command:
+        elif "blue" in command:
             target_color = "blue"
-            print("[INFO] Perintah dikenali. Memulai tracking objek biru...")
+            print("[INFO] Command recognized. Starting to track blue object...")
             break
-        elif "kuning" in command:
+        elif "yellow" in command:
             target_color = "yellow"
-            print("[INFO] Perintah dikenali. Memulai tracking objek kuning...")
+            print("[INFO] Command recognized. Starting to track yellow object...")
             break
         elif "orange" in command:
             target_color = "orange"
-            print("[INFO] Perintah dikenali. Memulai tracking objek orange...")
+            print("[INFO] Command recognized. Starting to track orange object...")
             break
         else:
-            print("[INFO] Warna tidak dikenali. Ulangi lagi.")
+            print("[INFO] Color not recognized. Please try again.")
     except sr.UnknownValueError:
-        print("[INFO] Tidak bisa mengenali suara.")
+        print("[INFO] Could not understand audio.")
     except sr.RequestError:
-        print("[ERROR] Gagal mengakses layanan pengenalan suara.")
+        print("[ERROR] Could not access the speech recognition service.")
 
 # --------------------------- #
 # FUNGSI PEMBANTU            #
@@ -157,7 +157,7 @@ while True:
         upper = np.array([37, 116, 255])
         mask = cv2.inRange(hsv, lower, upper)
 
-    elif target_color == "oranye":
+    elif target_color == "orange":
         lower = np.array([10, 120, 154])
         upper = np.array([26, 255, 255])
         mask = cv2.inRange(hsv, lower, upper)
@@ -266,30 +266,30 @@ while True:
             last_hand_pos = (palm_cx, palm_cy, hand_z)
 
             if palm_cx < obj_x - 30:
-                feedback += "Kurang ke kanan. "
+                feedback += "Move right. "
             elif palm_cx > obj_x + 30:
-                feedback += "Kurang ke kiri. "
+                feedback += "Move left. "
             if palm_cy < obj_y - 30:
-                feedback += "Kurang ke bawah. "
+                feedback += "Move down. "
             elif palm_cy > obj_y + 30:
-                feedback += "Kurang ke atas. "
+                feedback += "Move up. "
 
             selisih_z = hand_z - obj_z
             toleransi_z = max(80, int(obj_z * 0.3))
             if selisih_z > toleransi_z:
-                feedback += "Kurang mundur | "
+                feedback += "Move backward | "
             elif selisih_z < -toleransi_z:
-                feedback += "Kurang maju | "
+                feedback += "Move forward | "
 
             if not feedback and not holding_object:
-                feedback = "Pegang objek sekarang!"
+                feedback = "Grab the object now!"
             elif not feedback and holding_object:
-                feedback = "Objek Berhasil Digenggam"
+                feedback = "Object successfully grasped."
 
             if not holding_object and is_hand_closed(hand_landmarks):
                 holding_object = True
-                print("[INFO] Tangan menggenggam. Objek berhasil dipegang.")
-                speak_async("Objek Berhasil Digenggam") #multithread
+                print("[INFO] Hand is closed. Object successfully grasped.")
+                speak_async("Object successfully grasped") #multithread
                 break
 
             print(f"[DEBUG] Obj Z: {obj_z} | Hand Z: {hand_z} | Selisih: {selisih_z} | Toleransi: {toleransi_z}")
