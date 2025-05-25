@@ -233,6 +233,9 @@ if obj_x is None:
 
 print(f"[INFO] Melanjutkan tracking dari posisi scanning: ({obj_x}, {obj_y}, {obj_z})")
 
+stable_counter = 0
+stable_required = 5
+
 while True:
     dxl_pos_x = packetHandler.read4ByteTxRx(portHandler, DXL_ID_HORIZONTAL, ADDR_PRESENT_POSITION)[0]
     dxl_pos_y = packetHandler.read4ByteTxRx(portHandler, DXL_ID_VERTICAL, ADDR_PRESENT_POSITION)[0]
@@ -317,10 +320,21 @@ while True:
 
         print("[INFO] Tracking objek...")
 
+        # if abs(error_x) < 10 and abs(error_y) < 10:
+        #     print("[INFO] Objek dikunci. Siap ke deteksi tangan.")
+        #     time.sleep(1)
+        #     break
+
         if abs(error_x) < 10 and abs(error_y) < 10:
-            print("[INFO] Objek dikunci. Siap ke deteksi tangan.")
-            time.sleep(1)
-            break
+            stable_counter += 1
+            print(f"[INFO] Objek stabil ({stable_counter}/{stable_required})")
+            if stable_counter >= stable_required:
+                print("[INFO] Objek dikunci. Siap ke deteksi tangan.")
+                time.sleep(1)
+                break
+        else:
+            stable_counter = 0
+
 
     cv2.imshow("Tracking Objek", color_image)
     if cv2.waitKey(1) & 0xFF == ord('q'):
