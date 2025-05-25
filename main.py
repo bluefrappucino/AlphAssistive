@@ -110,12 +110,128 @@ def is_hand_closed(hand_landmarks):
             closed_count += 1
     return closed_count >= 3
 
+
+def speak(text):
+    engine = pyttsx3.init()
+    engine.setProperty('rate', 200)
+    engine.say(text)
+    engine.runAndWait()
+
+def detect_target_in_frame(color_image, hsv, target_color):
+    if target_color == "red":
+        lower_red1 = np.array([46, 22, 131])
+        upper_red1 = np.array([10, 81, 255])
+        lower_red2 = np.array([160, 101, 92])
+        upper_red2 = np.array([180, 255, 255])
+        mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
+        mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
+        mask = cv2.bitwise_or(mask1, mask2)
+    elif target_color == "green":
+        lower = np.array([45, 78, 66])
+        upper = np.array([86, 255, 255])
+        mask = cv2.inRange(hsv, lower, upper)
+    elif target_color == "blue":
+        lower = np.array([82, 32, 147])
+        upper = np.array([180, 92, 255])
+        mask = cv2.inRange(hsv, lower, upper)
+    elif target_color == "yellow":
+        lower = np.array([12, 43, 193])
+        upper = np.array([37, 116, 255])
+        mask = cv2.inRange(hsv, lower, upper)
+    elif target_color == "orange":
+        lower = np.array([10, 120, 154])
+        upper = np.array([26, 255, 255])
+        mask = cv2.inRange(hsv, lower, upper)
+    else:
+        return False
+
+    contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    return len(contours) > 0
+
+def scan_for_object():
+    scan_positions = {
+        "kanan": 1461,
+        "kiri": 2693,
+        "atas": 2785,
+        "bawah": 1883
+    }
+
+    for direction, pos in scan_positions.items():
+        print(f"[SCAN] Menggerakkan kamera ke arah {direction.upper()}")
+        if direction in ["kanan", "kiri"]:
+            packetHandler.write4ByteTxRx(portHandler, DXL_ID_HORIZONTAL, ADDR_GOAL_POSITION, pos)
+        else:
+            packetHandler.write4ByteTxRx(portHandler, DXL_ID_VERTICAL, ADDR_GOAL_POSITION, pos)
+        time.sleep(1.5)
+
+        for _ in range(5):
+            frames = pipeline.wait_for_frames()
+            color_frame = frames.get_color_frame()
+            depth_frame = frames.get_depth_frame()
+            if not color_frame or not depth_frame:
+                continue
+
+            color_image = np.asanyarray(color_frame.get_data())
+            depth_image = np.asanyarray(depth_frame.get_data())
+            hsv = cv2.cvtColor(color_image, cv2.COLOR_BGR2HSV)
+
+            # Gunakan kembali deteksi berdasarkan warna target
+            if target_color == "red":
+                lower_red1 = np.array([46, 22, 131])
+                upper_red1 = np.array([10, 81, 255])
+                lower_red2 = np.array([160, 101, 92])
+                upper_red2 = np.array([180, 255, 255])
+                mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
+                mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
+                mask = cv2.bitwise_or(mask1, mask2)
+            elif target_color == "green":
+                lower = np.array([45, 78, 66])
+                upper = np.array([86, 255, 255])
+                mask = cv2.inRange(hsv, lower, upper)
+            elif target_color == "blue":
+                lower = np.array([82, 32, 147])
+                upper = np.array([180, 92, 255])
+                mask = cv2.inRange(hsv, lower, upper)
+            elif target_color == "yellow":
+                lower = np.array([12, 43, 193])
+                upper = np.array([37, 116, 255])
+                mask = cv2.inRange(hsv, lower, upper)
+            elif target_color == "orange":
+                lower = np.array([10, 120, 154])
+                upper = np.array([26, 255, 255])
+                mask = cv2.inRange(hsv, lower, upper)
+            else:
+                continue
+
+            contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            if contours:
+                largest = max(contours, key=cv2.contourArea)
+                x, y, w, h = cv2.boundingRect(largest)
+                obj_x = x + w // 2
+                obj_y = y + h // 2
+                roi = depth_image[y:y+h, x:x+w]
+                roi = roi[(roi > 100) & (roi < 2000)]
+                obj_z = int(np.median(roi)) if roi.size > 0 else 0
+                print(f"[SCAN] Objek ditemukan di arah {direction.upper()} ({obj_x}, {obj_y}, {obj_z})")
+                return obj_x, obj_y, obj_z
+
+    speak("Object not found")
+    return None, None, None
+
+
+
 # --------------------------- #
 # TAHAP 1: TRACK OBJEK       #
 # --------------------------- #
-print("[INFO] Mencari objek dan mengunci posisi...")
+print("[INFO] Melakukan scanning awal...")
+obj_x, obj_y, obj_z = scan_for_object()
+if obj_x is None:
+    pipeline.stop()
+    portHandler.closePort()
+    cv2.destroyAllWindows()
+    exit()
 
-obj_x = obj_y = obj_z = None
+print(f"[INFO] Melanjutkan tracking dari posisi scanning: ({obj_x}, {obj_y}, {obj_z})")
 
 while True:
     dxl_pos_x = packetHandler.read4ByteTxRx(portHandler, DXL_ID_HORIZONTAL, ADDR_PRESENT_POSITION)[0]
@@ -212,6 +328,7 @@ while True:
         portHandler.closePort()
         cv2.destroyAllWindows()
         exit()
+
 
 # --------------------------- #
 # TAHAP 2: DETEKSI TANGAN    #
