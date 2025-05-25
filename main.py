@@ -330,7 +330,7 @@ while True:
             print(f"[INFO] Objek stabil ({stable_counter}/{stable_required})")
             if stable_counter >= stable_required:
                 print("[INFO] Objek dikunci. Siap ke deteksi tangan.")
-                time.sleep(1)
+                # time.sleep(1)
                 break
         else:
             stable_counter = 0
@@ -343,6 +343,19 @@ while True:
         cv2.destroyAllWindows()
         exit()
 
+# multithread
+def speak_async(text):
+    def run():
+        try:
+            engine = pyttsx3.init()
+            engine.setProperty('rate', 200)
+            engine.say(text)
+            engine.runAndWait()
+        except Exception as e:
+            print(f"[ERROR] Voice output failed: {e}")
+    threading.Thread(target=run, daemon=True).start()
+
+speak_async("object is here. grab it!")
 
 # --------------------------- #
 # TAHAP 2: DETEKSI TANGAN    #
@@ -356,15 +369,6 @@ holding_object = False
 last_feedback = ""
 last_talk_time = 0
 last_hand_pos = None
-
-# multithread
-def speak_async(text):
-    def run():
-        engine = pyttsx3.init()
-        engine.setProperty('rate', 200) #tadi 150
-        engine.say(text)
-        engine.runAndWait()
-    threading.Thread(target=lambda: engine.say(text) or engine.runAndWait(), daemon=True).start()
 
 while True:
     frames = pipeline.wait_for_frames()
@@ -443,7 +447,7 @@ while True:
                     (10, 55), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
 
     if holding_object:
-        cv2.putText(color_image, "Holding object", (10, 70),
+        cv2.putText(color_image, "Holding object", (10, 80),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
         time.sleep(1)
         break
