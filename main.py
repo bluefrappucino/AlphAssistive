@@ -150,7 +150,7 @@ def detect_target_in_frame(color_image, hsv, target_color):
 
 def scan_for_object():
     scan_positions = {
-        "kanan": 1461,
+        "kanan": 1817,
         "kiri": 2693,
         "atas": 2785,
         "bawah": 1883
@@ -218,8 +218,6 @@ def scan_for_object():
     speak("Object not found")
     return None, None, None
 
-
-
 # --------------------------- #
 # TAHAP 1: TRACK OBJEK       #
 # --------------------------- #
@@ -234,7 +232,7 @@ if obj_x is None:
 print(f"[INFO] Melanjutkan tracking dari posisi scanning: ({obj_x}, {obj_y}, {obj_z})")
 
 stable_counter = 0
-stable_required = 5
+stable_required = 1
 
 while True:
     dxl_pos_x = packetHandler.read4ByteTxRx(portHandler, DXL_ID_HORIZONTAL, ADDR_PRESENT_POSITION)[0]
@@ -400,21 +398,50 @@ while True:
             palm_cy = int(middle_mcp.y * color_image.shape[0])
             last_hand_pos = (palm_cx, palm_cy, hand_z)
 
-            if palm_cx < obj_x - 30:
+            # if palm_cx < obj_x - 30:
+            #     feedback += "Move right. "
+            # elif palm_cx > obj_x + 30:
+            #     feedback += "Move left. "
+            # if palm_cy < obj_y - 30:
+            #     feedback += "Move down. "
+            # elif palm_cy > obj_y + 30:
+            #     feedback += "Move up. "
+
+            # X axis (horizontal)
+            if obj_x - 30 <= palm_cx < obj_x - 10:
+                feedback += "A little bit right. "
+            elif palm_cx < obj_x - 30:
                 feedback += "Move right. "
+            elif obj_x + 10 < palm_cx <= obj_x + 30:
+                feedback += "A little bit left. "
             elif palm_cx > obj_x + 30:
                 feedback += "Move left. "
-            if palm_cy < obj_y - 30:
+
+            # Y axis (vertical)
+            if obj_y - 30 <= palm_cy < obj_y - 10:
+                feedback += "A little bit down. "
+            elif palm_cy < obj_y - 30:
                 feedback += "Move down. "
+            elif obj_y + 10 < palm_cy <= obj_y + 30:
+                feedback += "A little bit up. "
             elif palm_cy > obj_y + 30:
                 feedback += "Move up. "
 
             selisih_z = hand_z - obj_z
-            toleransi_z = max(80, int(obj_z * 0.3))
-            if selisih_z > toleransi_z:
-                feedback += "Move backward | "
-            elif selisih_z < -toleransi_z:
-                feedback += "Move forward | "
+            toleransi_z = max(50, int(obj_z * 0.25))
+            # if selisih_z > toleransi_z:
+            #     feedback += "Move backward | "
+            # elif selisih_z < -toleransi_z:
+            #     feedback += "Move forward | "
+            # Z axis (depth)
+            if toleransi_z < selisih_z <= toleransi_z + 100:
+                feedback += "A little bit backward. "
+            elif selisih_z > toleransi_z + 100:
+                feedback += "Move backward. "
+            elif -toleransi_z - 100 <= selisih_z < -toleransi_z:
+                feedback += "A little bit forward. "
+            elif selisih_z < -toleransi_z - 100:
+                feedback += "Move forward. "
 
             if not feedback and not holding_object:
                 feedback = "Grab the object now!"
@@ -447,7 +474,7 @@ while True:
                     (10, 55), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
 
     if holding_object:
-        cv2.putText(color_image, "Holding object", (10, 80),
+        cv2.putText(color_image, "Holding object", (10, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
         time.sleep(1)
         break
