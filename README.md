@@ -4,6 +4,9 @@
 
 ---
 
+##Demo
+[https://drive.google.com/file/d/1IvgHx4adLSqwkL9n1uexajCkO_FSGcbh/view?usp=drive_link](url)
+
 ## Features
 
 * Voice command-based color selection (e.g., "aku ingin ambil objek merah")
@@ -89,11 +92,5 @@ AlphaAssistive/
 ## Contact
 
 For questions or collaboration, please contact: \[[alfa271200@gmail.com](mailto:alfa271200@gmail.com)]
-
----
-
-## Demo
-
-> Coming soon: video demo of AlphaAssistive in action.
 
 ---
