@@ -5,7 +5,8 @@
 ---
 
 ## Demo
-[https://drive.google.com/file/d/1IvgHx4adLSqwkL9n1uexajCkO_FSGcbh/view?usp=drive_link](url)
+![Image](https://github.com/user-attachments/assets/3c432241-2913-4349-9e2e-cffb52b1bfb0)
+Full Video: [https://drive.google.com/file/d/1IvgHx4adLSqwkL9n1uexajCkO_FSGcbh/view?usp=drive_link](url)
 
 ## Features
 
