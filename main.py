@@ -148,85 +148,13 @@ def detect_target_in_frame(color_image, hsv, target_color):
     contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     return len(contours) > 0
 
-def scan_for_object():
-    scan_positions = {
-        "kanan": 1817,
-        "kiri": 2693,
-        "atas": 2785,
-        "bawah": 1883
-    }
-
-    for direction, pos in scan_positions.items():
-        print(f"[SCAN] Menggerakkan kamera ke arah {direction.upper()}")
-        if direction in ["kanan", "kiri"]:
-            packetHandler.write4ByteTxRx(portHandler, DXL_ID_HORIZONTAL, ADDR_GOAL_POSITION, pos)
-        else:
-            packetHandler.write4ByteTxRx(portHandler, DXL_ID_VERTICAL, ADDR_GOAL_POSITION, pos)
-        time.sleep(1.5)
-
-        for _ in range(5):
-            frames = pipeline.wait_for_frames()
-            color_frame = frames.get_color_frame()
-            depth_frame = frames.get_depth_frame()
-            if not color_frame or not depth_frame:
-                continue
-
-            color_image = np.asanyarray(color_frame.get_data())
-            depth_image = np.asanyarray(depth_frame.get_data())
-            hsv = cv2.cvtColor(color_image, cv2.COLOR_BGR2HSV)
-
-            # Gunakan kembali deteksi berdasarkan warna target
-            if target_color == "red":
-                lower_red1 = np.array([46, 22, 131])
-                upper_red1 = np.array([10, 81, 255])
-                lower_red2 = np.array([160, 101, 92])
-                upper_red2 = np.array([180, 255, 255])
-                mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
-                mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
-                mask = cv2.bitwise_or(mask1, mask2)
-            elif target_color == "green":
-                lower = np.array([47, 67, 66])
-                upper = np.array([78, 255, 255])
-                mask = cv2.inRange(hsv, lower, upper)
-            elif target_color == "blue":
-                lower = np.array([48, 42, 161])
-                upper = np.array([97, 88, 255])
-                mask = cv2.inRange(hsv, lower, upper)
-            elif target_color == "yellow":
-                lower = np.array([16, 51, 157])
-                upper = np.array([26, 135, 255])
-                mask = cv2.inRange(hsv, lower, upper)
-            elif target_color == "orange":
-                lower = np.array([7, 95, 154])
-                upper = np.array([26, 255, 255])
-                mask = cv2.inRange(hsv, lower, upper)
-            else:
-                continue
-
-            contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-            if contours:
-                largest = max(contours, key=cv2.contourArea)
-                x, y, w, h = cv2.boundingRect(largest)
-                obj_x = x + w // 2
-                obj_y = y + h // 2
-                roi = depth_image[y:y+h, x:x+w]
-                roi = roi[(roi > 100) & (roi < 2000)]
-                obj_z = int(np.median(roi)) if roi.size > 0 else 0
-                print(f"[SCAN] Objek ditemukan di arah {direction.upper()} ({obj_x}, {obj_y}, {obj_z})")
-                return obj_x, obj_y, obj_z
-
-    speak("Object not found")
-    return None, None, None
-
 # def scan_for_object():
 #     scan_positions = {
 #         "kanan": 1817,
-#         "kiri": 2279,
-#         "atas": 2687,
-#         "bawah": 2229
+#         "kiri": 2693,
+#         "atas": 2785,
+#         "bawah": 1883
 #     }
-
-#     found_object = None
 
 #     for direction, pos in scan_positions.items():
 #         print(f"[SCAN] Menggerakkan kamera ke arah {direction.upper()}")
@@ -247,7 +175,7 @@ def scan_for_object():
 #             depth_image = np.asanyarray(depth_frame.get_data())
 #             hsv = cv2.cvtColor(color_image, cv2.COLOR_BGR2HSV)
 
-#             # [Deteksi berdasarkan warna - sama seperti sebelumnya]
+#             # Gunakan kembali deteksi berdasarkan warna target
 #             if target_color == "red":
 #                 lower_red1 = np.array([46, 22, 131])
 #                 upper_red1 = np.array([10, 81, 255])
@@ -276,57 +204,127 @@ def scan_for_object():
 #                 continue
 
 #             contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-#             if contours and found_object is None:
+#             if contours:
 #                 largest = max(contours, key=cv2.contourArea)
 #                 x, y, w, h = cv2.boundingRect(largest)
 #                 obj_x = x + w // 2
 #                 obj_y = y + h // 2
 #                 roi = depth_image[y:y+h, x:x+w]
 #                 roi = roi[(roi > 100) & (roi < 2000)]
-#                 # obj_z = int(np.median(roi)) if roi.size > 0 else 0
-#                 # found_object = (obj_x, obj_y, obj_z)
 #                 obj_z = int(np.median(roi)) if roi.size > 0 else 0
-#                 if obj_z > 0:
-#                     found_object = (obj_x, obj_y, obj_z)
-#                     print(f"[SCAN] Objek ditemukan di arah {direction.upper()} ({obj_x}, {obj_y}, {obj_z})")
-#                 else:
-#                     print(f"[SCAN] Objek terdeteksi secara visual, tapi depth tidak valid.")
+#                 print(f"[SCAN] Objek ditemukan di arah {direction.upper()} ({obj_x}, {obj_y}, {obj_z})")
+#                 return obj_x, obj_y, obj_z
 
+#     speak("Object not found")
+#     return None, None, None
 
-#                 # print(f"[SCAN] Objek ditemukan di arah {direction.upper()} ({obj_x}, {obj_y}, {obj_z})")
-#     if found_object:
-#         return found_object
-#     else:
-#         speak("Object not found")
-#         return None, None, None
+def scan_for_object():
+    scan_positions = {
+        "kanan": 1817,
+        "kiri": 2279,
+        "atas": 2687,
+        "bawah": 2229
+    }
+
+    found_object = None
+
+    for direction, pos in scan_positions.items():
+        print(f"[SCAN] Menggerakkan kamera ke arah {direction.upper()}")
+        if direction in ["kanan", "kiri"]:
+            packetHandler.write4ByteTxRx(portHandler, DXL_ID_HORIZONTAL, ADDR_GOAL_POSITION, pos)
+        else:
+            packetHandler.write4ByteTxRx(portHandler, DXL_ID_VERTICAL, ADDR_GOAL_POSITION, pos)
+        time.sleep(1.5)
+
+        for _ in range(5):
+            frames = pipeline.wait_for_frames()
+            color_frame = frames.get_color_frame()
+            depth_frame = frames.get_depth_frame()
+            if not color_frame or not depth_frame:
+                continue
+
+            color_image = np.asanyarray(color_frame.get_data())
+            depth_image = np.asanyarray(depth_frame.get_data())
+            hsv = cv2.cvtColor(color_image, cv2.COLOR_BGR2HSV)
+
+            # [Deteksi berdasarkan warna - sama seperti sebelumnya]
+            if target_color == "red":
+                lower_red1 = np.array([46, 22, 131])
+                upper_red1 = np.array([10, 81, 255])
+                lower_red2 = np.array([160, 101, 92])
+                upper_red2 = np.array([180, 255, 255])
+                mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
+                mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
+                mask = cv2.bitwise_or(mask1, mask2)
+            elif target_color == "green":
+                lower = np.array([47, 67, 66])
+                upper = np.array([78, 255, 255])
+                mask = cv2.inRange(hsv, lower, upper)
+            elif target_color == "blue":
+                lower = np.array([48, 42, 161])
+                upper = np.array([97, 88, 255])
+                mask = cv2.inRange(hsv, lower, upper)
+            elif target_color == "yellow":
+                lower = np.array([16, 51, 157])
+                upper = np.array([26, 135, 255])
+                mask = cv2.inRange(hsv, lower, upper)
+            elif target_color == "orange":
+                lower = np.array([7, 95, 154])
+                upper = np.array([26, 255, 255])
+                mask = cv2.inRange(hsv, lower, upper)
+            else:
+                continue
+
+            contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+            if contours and found_object is None:
+                largest = max(contours, key=cv2.contourArea)
+                x, y, w, h = cv2.boundingRect(largest)
+                obj_x = x + w // 2
+                obj_y = y + h // 2
+                roi = depth_image[y:y+h, x:x+w]
+                roi = roi[(roi > 100) & (roi < 2000)]
+                # obj_z = int(np.median(roi)) if roi.size > 0 else 0
+                # found_object = (obj_x, obj_y, obj_z)
+                obj_z = int(np.median(roi)) if roi.size > 0 else 0
+                if obj_z > 0:
+                    found_object = (obj_x, obj_y, obj_z)
+                    print(f"[SCAN] Objek ditemukan di arah {direction.upper()} ({obj_x}, {obj_y}, {obj_z})")
+                else:
+                    print(f"[SCAN] Objek terdeteksi secara visual, tapi depth tidak valid.")
+                # print(f"[SCAN] Objek ditemukan di arah {direction.upper()} ({obj_x}, {obj_y}, {obj_z})")
+    if found_object:
+        return found_object
+    else:
+        speak("Object not found")
+        return None, None, None
 
 
 # --------------------------- #
 # TAHAP 1: TRACK OBJEK       #
 # --------------------------- #
 print("[INFO] Melakukan scanning awal...")
-obj_x, obj_y, obj_z = scan_for_object()
-if obj_x is None:
-    pipeline.stop()
-    portHandler.closePort()
-    cv2.destroyAllWindows()
-    exit()
-
 # obj_x, obj_y, obj_z = scan_for_object()
-# if None in (obj_x, obj_y, obj_z):
-#     print("[ERROR] Objek tidak ditemukan. Menghentikan sistem.")
-#     speak("Object not found. Please try again.")
+# if obj_x is None:
 #     pipeline.stop()
 #     portHandler.closePort()
 #     cv2.destroyAllWindows()
 #     exit()
 
+obj_x, obj_y, obj_z = scan_for_object()
+if None in (obj_x, obj_y, obj_z):
+    print("[ERROR] Objek tidak ditemukan. Menghentikan sistem.")
+    speak("Object not found. Please try again.")
+    pipeline.stop()
+    portHandler.closePort()
+    cv2.destroyAllWindows()
+    exit()
+
 print(f"[INFO] Melanjutkan tracking dari posisi scanning: ({obj_x}, {obj_y}, {obj_z})")
 
 stable_counter = 0
 stable_required = 1
-# start_tracking_time = time.time()
-# timeout_duration = 2  # dalam detik
+start_tracking_time = time.time()
+timeout_duration = 2  # dalam detik
 
 
 while True:
@@ -379,17 +377,17 @@ while True:
 
     contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-    # if time.time() - start_tracking_time > timeout_duration:
-    #     print("[TIMEOUT] Objek tidak ditemukan dalam 2 detik.")
-    #     speak("Object not found")
-    #     cv2.putText(color_image, "Object not found", (10, 50), cv2.FONT_HERSHEY_SIMPLEX,
-    #                 0.8, (0, 0, 255), 2)
-    #     cv2.imshow("Tracking Objek", color_image)
-    #     cv2.waitKey(2000)
-    #     pipeline.stop()
-    #     portHandler.closePort()
-    #     cv2.destroyAllWindows()
-    #     exit()
+    if time.time() - start_tracking_time > timeout_duration:
+        print("[TIMEOUT] Objek tidak ditemukan dalam 2 detik.")
+        speak("Object not found")
+        cv2.putText(color_image, "Object not found", (10, 50), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.8, (0, 0, 255), 2)
+        cv2.imshow("Tracking Objek", color_image)
+        cv2.waitKey(2000)
+        pipeline.stop()
+        portHandler.closePort()
+        cv2.destroyAllWindows()
+        exit()
 
     if contours:
         largest_contour = max(contours, key=cv2.contourArea)
@@ -530,7 +528,7 @@ while True:
                 feedback += "Move up. "
 
             selisih_z = hand_z - obj_z
-            toleransi_z = max(50, int(obj_z * 0.25))
+            toleransi_z = max(50, int(obj_z * 0.15))
             # if selisih_z > toleransi_z:
             #     feedback += "Move backward | "
             # elif selisih_z < -toleransi_z:
