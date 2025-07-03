@@ -140,7 +140,7 @@ def apply_limits(value, min_val, max_val):
     return max(min(value, max_val), min_val)
 
 def is_hand_closed(hand_landmarks, mp_hands_instance):
-    """Mendeteksi genggaman berdasarkan posisi Y (seperti di lama.py)."""
+    """Mendeteksi genggaman berdasarkan posisi Y"""
     if not hand_landmarks:
         return False
     closed_count = 0
@@ -156,7 +156,7 @@ def is_hand_closed(hand_landmarks, mp_hands_instance):
     return closed_count >= 3
 
 def get_color_mask(hsv_image, color_name):
-    """Membuat mask berdasarkan warna (NILAI DARI LAMA.PY)."""
+    """Membuat mask berdasarkan warna"""
     if color_name == "red":
         lower_red1 = np.array([0, 120, 70])
         upper_red1 = np.array([10, 255, 255])
