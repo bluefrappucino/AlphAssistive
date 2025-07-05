@@ -277,6 +277,8 @@ def scan_for_object(target_color):
 
                 x, y, w, h = cv2.boundingRect(largest)
                 obj_x, obj_y = x + w // 2, y + h // 2
+
+                #Depth Processing
                 depth_roi = np.asanyarray(depth_frame.get_data())[y:y+h, x:x+w]
                 valid_depth = depth_roi[(depth_roi > 100) & (depth_roi < 2000)]
                 obj_z = int(np.median(valid_depth)) if valid_depth.size > 0 else 0
@@ -366,7 +368,8 @@ def track_object(target_color, initial_obj_x, initial_obj_y, initial_obj_z):
             valid_depth = depth_roi[(depth_roi > 100) & (depth_roi < 2000)]
             if valid_depth.size > 0: obj_z = int(np.median(valid_depth))
 
-            frame_center_x, frame_center_y = color_image.shape[1] // 2, color_image.shape[0] // 2
+            # Hitung Error X Y 
+            frame_center_x, frame_center_y = color_image.shape[1] // 2, color_image.shape[0] // 2 #array dari HWC, yg diambil H sama W aja
             error_x = frame_center_x - obj_x
             error_y = frame_center_y - obj_y
             
